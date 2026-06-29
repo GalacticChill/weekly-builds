@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from . import optimize as opt
 from . import portfolio as pf
 
 
@@ -70,13 +71,15 @@ def plot_efficient_frontier(
     n: int = 5000,
     seed: int | None = 42,
 ) -> Path:
-    """Scatter of random portfolios coloured by Sharpe, with the min-variance
-    and max-Sharpe portfolios marked."""
+    """Scatter of random portfolios coloured by Sharpe, overlaid with the true
+    long-only efficient-frontier curve and the min-variance / max-Sharpe optima."""
     out_path = Path(out_path)
     cloud = pf.random_portfolios(mean_returns, cov, n=n, risk_free=risk_free, seed=seed)
 
-    mv_w = pf.min_variance_weights(cov)
-    ms_w = pf.max_sharpe_weights(mean_returns, cov, risk_free)
+    # The true frontier curve and the constrained (long-only) optima.
+    frontier = opt.efficient_frontier(mean_returns, cov, n_points=60)
+    mv_w = opt.min_variance_long_only(cov)
+    ms_w = opt.max_sharpe_long_only(mean_returns, cov, risk_free)
     mv = pf.portfolio_performance(mv_w, mean_returns, cov, risk_free)
     ms = pf.portfolio_performance(ms_w, mean_returns, cov, risk_free)
 
@@ -84,11 +87,20 @@ def plot_efficient_frontier(
     sc = ax.scatter(
         cloud["volatility"], cloud["return"], c=cloud["sharpe"], cmap="viridis", s=8
     )
+    ax.plot(
+        frontier["volatility"], frontier["return"],
+        color="black", linewidth=2, label="Efficient frontier",
+    )
+    # Capital market line from the risk-free rate through the tangency portfolio.
+    ax.plot(
+        [0, ms[1]], [risk_free, ms[0]],
+        color="gray", linestyle="--", linewidth=1, label="Capital market line",
+    )
     ax.scatter(mv[1], mv[0], marker="*", s=320, color="red", label="Min variance")
     ax.scatter(ms[1], ms[0], marker="*", s=320, color="gold",
-               edgecolor="black", label="Max Sharpe")
+               edgecolor="black", label="Max Sharpe (tangency)")
 
-    ax.set_title("Efficient frontier (random long-only portfolios)")
+    ax.set_title("Efficient frontier (long-only)")
     ax.set_xlabel("Annualized volatility")
     ax.set_ylabel("Annualized return")
     ax.legend()

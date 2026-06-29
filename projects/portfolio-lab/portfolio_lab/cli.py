@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
+from . import optimize as opt
 from . import portfolio as pf
 from .data import load_prices
 from .plots import plot_correlation, plot_efficient_frontier, plot_growth
@@ -29,6 +30,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     p.add_argument(
         "--risk-free", type=float, default=0.0, help="Annual risk-free rate, e.g. 0.04"
+    )
+    p.add_argument(
+        "--allow-short",
+        action="store_true",
+        help="Use unconstrained closed-form optima (allows shorting/leverage) "
+        "instead of realistic long-only optimization.",
     )
     p.add_argument(
         "--assets-dir", default="assets", help="Directory to write charts into"
@@ -71,12 +78,18 @@ def main(argv: list[str] | None = None) -> None:
     print(f"  Sharpe (rf={args.risk_free:.0%}):          {sharpe:7.2f}")
     print(f"  Max drawdown:           {mdd:7.2%}")
 
-    mv_w = pf.min_variance_weights(cov_ann)
-    ms_w = pf.max_sharpe_weights(mean_ann, cov_ann, args.risk_free)
+    if args.allow_short:
+        mv_w = pf.min_variance_weights(cov_ann)
+        ms_w = pf.max_sharpe_weights(mean_ann, cov_ann, args.risk_free)
+        mode = "long/short allowed, closed form"
+    else:
+        mv_w = opt.min_variance_long_only(cov_ann)
+        ms_w = opt.max_sharpe_long_only(mean_ann, cov_ann, args.risk_free)
+        mode = "long-only, optimized"
     mv = pf.portfolio_performance(mv_w, mean_ann, cov_ann, args.risk_free)
     ms = pf.portfolio_performance(ms_w, mean_ann, cov_ann, args.risk_free)
 
-    print("\nOptimal portfolios (long/short allowed):")
+    print(f"\nOptimal portfolios ({mode}):")
     print(f"  Min variance:  ret {mv[0]:6.2%}  vol {mv[1]:6.2%}  sharpe {mv[2]:5.2f}")
     print(f"     weights →   {_fmt_weights(tickers, mv_w)}")
     print(f"  Max Sharpe:    ret {ms[0]:6.2%}  vol {ms[1]:6.2%}  sharpe {ms[2]:5.2f}")
