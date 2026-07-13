@@ -53,6 +53,50 @@ Options:
 - `--cost` — proportional cost per dollar traded (`0.001` = 10 bps)
 - `--weights` — custom target weights (default: equal weight)
 
+## Signal-driven strategies
+
+Instead of fixed weights, you can let a **strategy** pick the weights from market
+signals, re-deciding on every rebalance date. Crucially, the engine only ever
+shows a strategy the data from *before* the rebalance date — so there's **no
+lookahead bias**, the mistake that makes most amateur backtests look brilliant and
+then fail live.
+
+```bash
+python -m backtester AAPL MSFT GOOG AMZN NVDA JPM XOM \
+    --strategy momentum --lookback 126 --rebalance M --cost 0.001 --risk-free 0.04
+```
+
+```
+momentum (M)  (rebalance=M)
+  Final value (start 1.0):  17.687
+  CAGR:                    47.48%
+  Sharpe (rf=4%):             1.46
+  Max drawdown:           -31.72%
+  Rebalances / avg turnover: 88  /  36.4%
+  Total transaction cost:  0.1723
+
+Equal-weight (M)  ...
+  CAGR:                    29.09%
+  Sharpe (rf=4%):             1.03
+```
+
+Built-in strategies (`--strategy`):
+
+- **`equal`** — the 1/N baseline that's famously hard to beat.
+- **`momentum`** — tilt toward assets with the strongest trailing return
+  (cross-sectional relative strength); losers get zero weight.
+- **`inverse-vol`** — weight by 1/volatility so each asset contributes similar
+  risk (a simple risk-parity heuristic).
+
+Each strategy run is benchmarked against a point-in-time equal-weight portfolio.
+
+> **Read the results honestly.** The momentum result above looks spectacular partly
+> because a tech-heavy basket over 2016–2023 is about the friendliest possible
+> environment for momentum — and note the turnover jumps from ~5% to ~36%, so it
+> only wins *after* paying much higher costs. Momentum also suffers sharp
+> "crashes" in other regimes. A backtest is a hypothesis, not a promise; the point
+> of the no-lookahead discipline is to make the hypothesis a fair one.
+
 ## Charts
 
 | Equity curve | Drawdown (underwater) |
@@ -76,10 +120,17 @@ accounting, is what separates a backtest from just multiplying returns together.
 **total cost** are reported so you can see the drag directly. Rebalancing more
 often controls risk but trades more; the tool lets you weigh that trade-off.
 
+For a **strategy** run, the same loop applies, but the target weights are
+recomputed on each rebalance date from `returns` up to (but not including) that
+day. The simulation starts only once `--warmup` days of history are available, so
+the signal has something to work with.
+
 ## What's inside
 
 - `data.py` — fetch and date-align adjusted closes for many tickers (`yfinance`)
-- `engine.py` — the day-by-day simulation with drift, rebalancing, and costs
+- `engine.py` — the day-by-day simulation with drift, rebalancing, and costs;
+  `run_backtest` (fixed weights) and `run_strategy_backtest` (point-in-time)
+- `strategies.py` — equal-weight, momentum, and inverse-volatility signals
 - `metrics.py` — CAGR, annualized volatility, Sharpe, max drawdown, drawdown path
 - `plots.py` — equity-curve and underwater charts
 - `cli.py` — the command-line entry point
@@ -87,13 +138,13 @@ often controls risk but trades more; the tool lets you weigh that trade-off.
 ## Use it as a library
 
 ```python
-from backtester import load_prices, daily_returns, run_backtest, summary
+from backtester import load_prices, daily_returns, run_strategy_backtest, momentum, summary
 
-prices = load_prices(["SPY", "TLT"], start="2010-01-01")
+prices = load_prices(["SPY", "QQQ", "TLT", "GLD"], start="2010-01-01")
 r = daily_returns(prices)
-res = run_backtest(r, [0.6, 0.4], rebalance="Q", cost=0.001)
+res = run_strategy_backtest(r, momentum, rebalance="M", cost=0.001, warmup=126)
 print(summary(res.equity, risk_free=0.02))
-print(f"Paid {res.total_cost:.4f} in costs over {res.n_rebalances} rebalances")
+print(res.weights_history.tail())  # the weights the strategy actually chose
 ```
 
 ## Tests
@@ -102,7 +153,9 @@ print(f"Paid {res.total_cost:.4f} in costs over {res.n_rebalances} rebalances")
 python -m pytest
 ```
 
-All 10 tests run offline against synthetic returns with hand-checked answers —
+All 17 tests run offline against synthetic returns with hand-checked answers —
 for example, a 100%-in-one-asset backtest must equal that asset's compounded
 returns and incur zero cost, and a curve that doubles over exactly 252 trading
-days must report a CAGR of 100%.
+days must report a CAGR of 100%. One test guards the no-lookahead rule directly: a
+"spy" strategy records the last date it was shown on each call and the test
+asserts every one lies strictly before the rebalance date it fed.
