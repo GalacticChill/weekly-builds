@@ -16,6 +16,15 @@ from .strategies import (
     inverse_volatility,
     momentum,
 )
+from .walkforward import (
+    DEFAULT_GRID,
+    Comparison,
+    FixedParamFit,
+    WalkForwardResult,
+    best_fixed_param,
+    compare,
+    walk_forward,
+)
 
 __all__ = [
     "load_prices",
@@ -33,4 +42,11 @@ __all__ = [
     "equal_weight",
     "momentum",
     "inverse_volatility",
+    "walk_forward",
+    "WalkForwardResult",
+    "best_fixed_param",
+    "FixedParamFit",
+    "compare",
+    "Comparison",
+    "DEFAULT_GRID",
 ]

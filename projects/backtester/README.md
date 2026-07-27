@@ -97,6 +97,56 @@ Each strategy run is benchmarked against a point-in-time equal-weight portfolio.
 > "crashes" in other regimes. A backtest is a hypothesis, not a promise; the point
 > of the no-lookahead discipline is to make the hypothesis a fair one.
 
+## Walk-forward validation — the honesty check
+
+No-lookahead fixes *when* a strategy sees data. But there's a subtler cheat: how
+you pick the strategy's **lookback**. If you try six lookbacks over the whole
+history and report the best one's Sharpe, you didn't measure a strategy — you
+went *shopping* for a number. Some of that Sharpe is skill; some is just the
+luckiest of six draws.
+
+**Walk-forward validation** removes the hindsight. It slides a rolling *train*
+window through time; in each window it picks the best lookback using **only** the
+data inside that window; then it applies that choice to the *next* window, which
+the selection never saw, and records those out-of-sample returns. The test
+windows tile the timeline with no gaps, so stitching them gives one continuous,
+honest OOS curve.
+
+```bash
+python -m backtester SPY QQQ AAPL MSFT GOOG AMZN NVDA JPM XOM \
+    --start 2012-01-01 --strategy momentum --walk-forward \
+    --grid 21 42 63 126 189 252 --train 504 --test 126
+```
+
+```
+Sharpe ratios:
+  In-sample-optimized claim (lookback=126, full-sample): +1.66
+  ...that same parameter, but out-of-sample:             +1.67
+  Walk-forward (honest, params chosen from past only):   +1.54
+  Equal-weight benchmark (out-of-sample):                +1.21
+
+  Overfitting tax (claimed - honest): +0.13
+```
+
+Two readings, both honest:
+
+- **On this basket, the tax was small (0.13).** Momentum's best lookback here is
+  fairly stable, and walk-forward (Sharpe 1.54) still comfortably beats equal
+  weight (1.21) — so the edge is largely real, not a fitting artifact.
+- **When there's no edge, the tax is brutal.** Run the same procedure on *pure
+  random noise* and the in-sample search proudly reports a Sharpe near **0.8**,
+  while walk-forward reveals the honest figure is near **0.1** — essentially zero.
+  The "best" lookback also lurches from fold to fold, a visible tell that it was
+  never a real signal. (This is exactly what the test suite asserts.)
+
+The overfitting tax — what an in-sample-optimized backtest *claims* minus what
+walk-forward actually *delivers* — is the single most useful number a backtest can
+report about its own trustworthiness.
+
+| Walk-forward OOS (vs the in-sample-optimized curve and equal weight) | Lookback chosen each fold |
+|---|---|
+| ![wf-equity](assets/walkforward_equity.png) | ![wf-params](assets/walkforward_params.png) |
+
 ## Charts
 
 | Equity curve | Drawdown (underwater) |
@@ -131,8 +181,11 @@ the signal has something to work with.
 - `engine.py` — the day-by-day simulation with drift, rebalancing, and costs;
   `run_backtest` (fixed weights) and `run_strategy_backtest` (point-in-time)
 - `strategies.py` — equal-weight, momentum, and inverse-volatility signals
+- `walkforward.py` — rolling train/test parameter selection, an in-sample-optimized
+  benchmark, and the overfitting-tax comparison
 - `metrics.py` — CAGR, annualized volatility, Sharpe, max drawdown, drawdown path
-- `plots.py` — equity-curve and underwater charts
+- `plots.py` — equity-curve, underwater, walk-forward comparison, and per-fold
+  parameter-choice charts
 - `cli.py` — the command-line entry point
 
 ## Use it as a library
@@ -153,9 +206,16 @@ print(res.weights_history.tail())  # the weights the strategy actually chose
 python -m pytest
 ```
 
-All 17 tests run offline against synthetic returns with hand-checked answers —
+All 24 tests run offline against synthetic returns with hand-checked answers —
 for example, a 100%-in-one-asset backtest must equal that asset's compounded
 returns and incur zero cost, and a curve that doubles over exactly 252 trading
 days must report a CAGR of 100%. One test guards the no-lookahead rule directly: a
 "spy" strategy records the last date it was shown on each call and the test
 asserts every one lies strictly before the rebalance date it fed.
+
+The walk-forward tests carry the key methodological claim: on **pure-noise**
+returns, the in-sample-optimized Sharpe must exceed the walk-forward OOS Sharpe
+(the overfitting tax is positive), while on returns with a **genuine** engineered
+edge the honest OOS curve still finishes in profit. Others check that the test
+windows tile the timeline with no gaps or overlap and that every chosen parameter
+comes from the search grid.

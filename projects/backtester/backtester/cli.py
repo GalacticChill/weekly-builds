@@ -12,8 +12,9 @@ from functools import partial
 from . import metrics
 from .data import daily_returns, load_prices
 from .engine import run_backtest, run_strategy_backtest
-from .plots import plot_drawdown, plot_equity
+from .plots import plot_curves, plot_drawdown, plot_equity, plot_param_choices
 from .strategies import STRATEGIES, equal_weight
+from .walkforward import DEFAULT_GRID, compare
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -56,6 +57,31 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Days of history required before a strategy first trades. Default 126.",
     )
     p.add_argument(
+        "--walk-forward",
+        action="store_true",
+        help="Validate the strategy honestly: choose its lookback in-sample only, "
+        "roll through time, and score purely out-of-sample. Requires --strategy.",
+    )
+    p.add_argument(
+        "--grid",
+        nargs="+",
+        type=int,
+        default=list(DEFAULT_GRID),
+        help="Candidate lookbacks to search over each fold (walk-forward mode).",
+    )
+    p.add_argument(
+        "--train",
+        type=int,
+        default=504,
+        help="Walk-forward training window in trading days. Default 504 (~2y).",
+    )
+    p.add_argument(
+        "--test",
+        type=int,
+        default=126,
+        help="Walk-forward test window in trading days. Default 126 (~6mo).",
+    )
+    p.add_argument(
         "--cost",
         type=float,
         default=0.001,
@@ -83,6 +109,57 @@ def _print_summary(label: str, res, risk_free: float) -> None:
     print(f"  Total transaction cost: {res.total_cost:7.4f}")
 
 
+def _run_walk_forward(args, returns) -> None:
+    """Walk-forward validation: honest OOS vs an in-sample-optimized backtest."""
+    strat_fn = STRATEGIES[args.strategy]
+    cmp = compare(
+        returns, strat_fn, param_values=args.grid, param_name="lookback",
+        train=args.train, test=args.test, rebalance=args.rebalance, cost=args.cost,
+    )
+    wf = cmp.walk_forward
+
+    print(f"\nWalk-forward validation: {args.strategy}")
+    print(f"  Grid searched: {args.grid}")
+    print(f"  Train / test windows: {args.train} / {args.test} trading days")
+    print(f"  Folds: {wf.folds}   (rebalance={args.rebalance})")
+
+    print("\nParameter chosen each fold (from past data only):")
+    for _, row in wf.choices.iterrows():
+        print(
+            f"  {row['test_start'].date()} -> {row['test_end'].date()}   "
+            f"lookback={int(row['lookback']):>4}   "
+            f"(in-sample Sharpe {row['in_sample_sharpe']:+.2f})"
+        )
+
+    honest = wf.oos_sharpe
+    claimed = cmp.naive_full_sample_sharpe
+    naive_oos = metrics.sharpe_ratio(cmp.naive_oos_equity)
+    ew_oos = metrics.sharpe_ratio(cmp.equal_weight_equity)
+
+    print("\nSharpe ratios:")
+    print(f"  In-sample-optimized claim (lookback={cmp.naive_param}, full-sample): {claimed:+.2f}")
+    print(f"  ...that same parameter, but out-of-sample:                          {naive_oos:+.2f}")
+    print(f"  Walk-forward (honest, params chosen from past only):                {honest:+.2f}")
+    print(f"  Equal-weight benchmark (out-of-sample):                             {ew_oos:+.2f}")
+    print(f"\n  Overfitting tax (claimed - honest): {cmp.overfitting_tax:+.2f}")
+    print(f"  Walk-forward OOS total return:      {cmp.walk_forward.equity.iloc[-1] - 1.0:+.2%}")
+
+    assets = Path(args.assets_dir)
+    assets.mkdir(parents=True, exist_ok=True)
+    curves = {
+        "Walk-forward (honest)": wf.equity,
+        f"In-sample-optimized (lookback={cmp.naive_param})": cmp.naive_oos_equity,
+        "Equal-weight": cmp.equal_weight_equity,
+    }
+    c1 = plot_curves(curves, assets / "walkforward_equity.png",
+                     title=f"Walk-forward OOS: {args.strategy}")
+    c2 = plot_param_choices(wf.choices, "lookback", assets / "walkforward_params.png")
+    print("\nSaved charts:")
+    for path in (c1, c2):
+        print(f"  {path}")
+    print()
+
+
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
 
@@ -93,6 +170,12 @@ def main(argv: list[str] | None = None) -> None:
     span = f"{prices.index[0].date()} → {prices.index[-1].date()}"
     print(f"\nBacktest: {', '.join(tickers)}   ({span})")
     print(f"  Transaction cost: {args.cost:.2%} per trade")
+
+    if args.walk_forward:
+        if args.strategy is None:
+            raise SystemExit("--walk-forward requires --strategy (momentum or inverse-vol).")
+        _run_walk_forward(args, returns)
+        return
 
     if args.strategy is not None:
         # Signal-driven mode: the strategy re-chooses weights each rebalance,
