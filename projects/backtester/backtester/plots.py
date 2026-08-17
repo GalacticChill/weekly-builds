@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use("Agg")  # headless: render to files, never open a window
 import matplotlib.pyplot as plt
 
+import numpy as np
 import pandas as pd
 
 from . import metrics
@@ -63,6 +64,40 @@ def plot_curves(
         ax.plot(eq.index, eq.values, label=label)
     ax.set_title(title)
     ax.set_ylabel("Out-of-sample value (start = 1.0)")
+    ax.legend()
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=120)
+    plt.close(fig)
+    return out_path
+
+
+def plot_bootstrap(
+    samples,
+    observed: float,
+    ci: tuple[float, float],
+    out_path: str | Path,
+    title: str = "Bootstrap distribution of the Sharpe ratio",
+    xlabel: str = "Sharpe ratio",
+) -> Path:
+    """Histogram of a bootstrap distribution with the observed value, CI, and zero.
+
+    Reading it: if the shaded confidence band sits entirely to the right of the
+    dashed zero line, the edge is unlikely to be luck; if the band straddles zero,
+    it might be.
+    """
+    out_path = Path(out_path)
+    samples = np.asarray(samples, dtype=float)
+    samples = samples[np.isfinite(samples)]
+
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+    ax.hist(samples, bins=40, color="#4c72b0", alpha=0.75, edgecolor="white")
+    ax.axvspan(ci[0], ci[1], color="#4c72b0", alpha=0.15, label="95% CI")
+    ax.axvline(observed, color="#c44e52", linewidth=2, label=f"observed = {observed:.2f}")
+    ax.axvline(0.0, color="black", linestyle="--", linewidth=1.2, label="no edge (0)")
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("bootstrap resamples")
     ax.legend()
     ax.grid(alpha=0.3)
     fig.tight_layout()

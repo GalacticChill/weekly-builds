@@ -16,6 +16,15 @@ from .strategies import (
     inverse_volatility,
     momentum,
 )
+from .significance import (
+    BootstrapResult,
+    CompareResult,
+    block_bootstrap_indices,
+    bootstrap_metric,
+    compare_sharpe,
+    sharpe_from_returns,
+    sidak_pvalue,
+)
 from .walkforward import (
     DEFAULT_GRID,
     Comparison,
@@ -49,4 +58,11 @@ __all__ = [
     "compare",
     "Comparison",
     "DEFAULT_GRID",
+    "sharpe_from_returns",
+    "block_bootstrap_indices",
+    "bootstrap_metric",
+    "BootstrapResult",
+    "compare_sharpe",
+    "CompareResult",
+    "sidak_pvalue",
 ]

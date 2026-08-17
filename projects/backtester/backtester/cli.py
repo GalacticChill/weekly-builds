@@ -12,7 +12,14 @@ from functools import partial
 from . import metrics
 from .data import daily_returns, load_prices
 from .engine import run_backtest, run_strategy_backtest
-from .plots import plot_curves, plot_drawdown, plot_equity, plot_param_choices
+from .plots import (
+    plot_bootstrap,
+    plot_curves,
+    plot_drawdown,
+    plot_equity,
+    plot_param_choices,
+)
+from .significance import bootstrap_metric, compare_sharpe, sidak_pvalue
 from .strategies import STRATEGIES, equal_weight
 from .walkforward import DEFAULT_GRID, compare
 
@@ -80,6 +87,31 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         default=126,
         help="Walk-forward test window in trading days. Default 126 (~6mo).",
+    )
+    p.add_argument(
+        "--significance",
+        action="store_true",
+        help="Bootstrap the strategy's Sharpe: is the edge distinguishable from "
+        "luck? Reports a confidence interval and p-values. Requires --strategy.",
+    )
+    p.add_argument(
+        "--n-boot",
+        type=int,
+        default=2000,
+        help="Number of bootstrap resamples (significance mode). Default 2000.",
+    )
+    p.add_argument(
+        "--block",
+        type=int,
+        default=10,
+        help="Block length in days for the block bootstrap. Default 10.",
+    )
+    p.add_argument(
+        "--trials",
+        type=int,
+        default=1,
+        help="How many strategies you actually tried (significance mode). Applies a "
+        "Sidak multiple-testing correction to the p-value. Default 1.",
     )
     p.add_argument(
         "--cost",
@@ -160,6 +192,59 @@ def _run_walk_forward(args, returns) -> None:
     print()
 
 
+def _run_significance(args, returns) -> None:
+    """Bootstrap significance: is the strategy's Sharpe distinguishable from luck?"""
+    strat_fn = STRATEGIES[args.strategy]
+    if args.lookback is not None:
+        strat_fn = partial(strat_fn, lookback=args.lookback)
+
+    test = run_strategy_backtest(
+        returns, strat_fn, rebalance=args.rebalance, cost=args.cost, warmup=args.warmup
+    )
+    bench = run_strategy_backtest(
+        returns, equal_weight, rebalance=args.rebalance, cost=args.cost,
+        warmup=args.warmup,
+    )
+    strat_r = test.returns.to_numpy()
+    bench_r = bench.returns.to_numpy()
+
+    boot = bootstrap_metric(
+        strat_r, n_boot=args.n_boot, block=args.block, seed=42
+    )
+    cmp = compare_sharpe(
+        strat_r, bench_r, n_boot=args.n_boot, block=args.block, seed=42
+    )
+
+    print(f"\nBootstrap significance: {args.strategy}")
+    print(f"  {args.n_boot} resamples, block length {args.block} days, "
+          f"rebalance={args.rebalance}")
+
+    print("\nIs the strategy's Sharpe distinguishable from zero?")
+    print(f"  Observed Sharpe:     {boot.observed:+.2f}")
+    print(f"  95% CI:              [{boot.ci_low:+.2f}, {boot.ci_high:+.2f}]")
+    print(f"  Bootstrap p-value:   {boot.p_value:.4f}   "
+          f"({'significant' if boot.significant else 'NOT significant'} at 5%)")
+    if args.trials > 1:
+        adj = sidak_pvalue(boot.p_value, args.trials)
+        print(f"  After trying {args.trials} strategies (Sidak): p = {adj:.4f}   "
+              f"({'still significant' if adj < 0.05 else 'no longer significant'})")
+
+    print("\nDoes it beat equal-weight, or is the gap luck?")
+    print(f"  Sharpe difference:   {cmp.observed_diff:+.2f}")
+    print(f"  95% CI:              [{cmp.ci_low:+.2f}, {cmp.ci_high:+.2f}]")
+    print(f"  Bootstrap p-value:   {cmp.p_value:.4f}   "
+          f"({'significant' if cmp.significant else 'NOT significant'} at 5%)")
+
+    assets = Path(args.assets_dir)
+    assets.mkdir(parents=True, exist_ok=True)
+    chart = plot_bootstrap(
+        boot.samples, boot.observed, (boot.ci_low, boot.ci_high),
+        assets / "bootstrap_sharpe.png",
+        title=f"Bootstrap Sharpe: {args.strategy} ({args.n_boot} resamples)",
+    )
+    print(f"\nSaved chart:\n  {chart}\n")
+
+
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
 
@@ -175,6 +260,12 @@ def main(argv: list[str] | None = None) -> None:
         if args.strategy is None:
             raise SystemExit("--walk-forward requires --strategy (momentum or inverse-vol).")
         _run_walk_forward(args, returns)
+        return
+
+    if args.significance:
+        if args.strategy is None:
+            raise SystemExit("--significance requires --strategy (momentum or inverse-vol).")
+        _run_significance(args, returns)
         return
 
     if args.strategy is not None:

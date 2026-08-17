@@ -147,6 +147,58 @@ report about its own trustworthiness.
 |---|---|
 | ![wf-equity](assets/walkforward_equity.png) | ![wf-params](assets/walkforward_params.png) |
 
+## Statistical significance — is the edge real, or luck?
+
+This is the third of three honesty checks, and it answers the question the first
+two leave open. No-lookahead fixed *when* the strategy sees data. Walk-forward
+fixed *how its parameters were chosen*. But even a clean, out-of-sample Sharpe of
+1.5 is a single number estimated from a noisy, finite sample — so how sure are we
+it isn't really zero?
+
+The tool is the **block bootstrap**. We resample the strategy's daily returns in
+short contiguous blocks (10 days here) — blocks, not single days, so the
+resamples keep the volatility clustering and autocorrelation that real returns
+have — and recompute the Sharpe thousands of times. That traces out its sampling
+distribution, which gives a confidence interval and a p-value (obtained by
+re-centering the returns to impose the null of "no edge").
+
+```bash
+python -m backtester SPY QQQ AAPL MSFT GOOG AMZN NVDA JPM XOM \
+    --start 2012-01-01 --strategy momentum --significance --trials 3
+```
+
+```
+Is the strategy's Sharpe distinguishable from zero?
+  Observed Sharpe:     +1.51
+  95% CI:              [+0.99, +2.04]
+  Bootstrap p-value:   0.0005   (significant at 5%)
+  After trying 3 strategies (Sidak): p = 0.0015   (still significant)
+
+Does it beat equal-weight, or is the gap luck?
+  Sharpe difference:   +0.29
+  95% CI:              [+0.00, +0.58]
+  Bootstrap p-value:   0.0250   (significant at 5%)
+```
+
+The honest nuance is in the two questions having *different* answers:
+
+- **Versus zero, the edge is solid.** The whole confidence band sits well to the
+  right of zero — momentum genuinely has skill here, and it survives a
+  multiple-testing (Sidak) correction for having tried a few strategies.
+- **Versus equal-weight, the edge is real but marginal.** The Sharpe advantage over
+  a naive 1/N portfolio is only ~0.29 and its CI barely clears zero. In plain
+  terms: most of momentum's skill is just *being in the market*; the *incremental*
+  skill over doing the simplest possible thing is modest. A backtest that only
+  reported "Sharpe 1.5!" would hide exactly that.
+
+**Multiple testing.** `--trials N` applies a Sidak correction, `1 - (1 - p)^N`. If
+you quietly tried 20 strategies and reported the best one's p = 0.03, its honest
+p is `1 - 0.97^20 = 0.46` — a coin flip. This is the statistical echo of the
+overfitting tax: searching inflates significance, whether you search over
+parameters or over strategies.
+
+![bootstrap](assets/bootstrap_sharpe.png)
+
 ## Charts
 
 | Equity curve | Drawdown (underwater) |
@@ -183,9 +235,11 @@ the signal has something to work with.
 - `strategies.py` — equal-weight, momentum, and inverse-volatility signals
 - `walkforward.py` — rolling train/test parameter selection, an in-sample-optimized
   benchmark, and the overfitting-tax comparison
+- `significance.py` — block-bootstrap Sharpe confidence intervals and p-values, a
+  paired strategy-vs-benchmark comparison, and a Sidak multiple-testing correction
 - `metrics.py` — CAGR, annualized volatility, Sharpe, max drawdown, drawdown path
-- `plots.py` — equity-curve, underwater, walk-forward comparison, and per-fold
-  parameter-choice charts
+- `plots.py` — equity-curve, underwater, walk-forward comparison, per-fold
+  parameter-choice, and bootstrap-distribution charts
 - `cli.py` — the command-line entry point
 
 ## Use it as a library
@@ -206,7 +260,7 @@ print(res.weights_history.tail())  # the weights the strategy actually chose
 python -m pytest
 ```
 
-All 24 tests run offline against synthetic returns with hand-checked answers —
+All 34 tests run offline against synthetic returns with hand-checked answers —
 for example, a 100%-in-one-asset backtest must equal that asset's compounded
 returns and incur zero cost, and a curve that doubles over exactly 252 trading
 days must report a CAGR of 100%. One test guards the no-lookahead rule directly: a
@@ -219,3 +273,9 @@ returns, the in-sample-optimized Sharpe must exceed the walk-forward OOS Sharpe
 edge the honest OOS curve still finishes in profit. Others check that the test
 windows tile the timeline with no gaps or overlap and that every chosen parameter
 comes from the search grid.
+
+The significance tests pin down the statistics: a synthetic series with a real
+positive mean must come back significant (its Sharpe CI excludes zero), pure
+zero-mean noise must **not**, the paired comparison must flag a true outperformer
+and clear a pair of twins, and the block sampler must lay down genuinely
+contiguous blocks. The whole suite is seeded, so every p-value is reproducible.
