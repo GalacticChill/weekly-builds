@@ -8,6 +8,7 @@ Weekly data/ML and finance projects in Python. An incubator for new builds.
 - [Star Signals](projects/star-signals) — does GitHub reward substance or surface signal? A machine-learning capstone predicting a repo's stars from features split into signal vs substance, measuring how much predictive power each camp contributes. **Graduated to its own repo → [GalacticChill/star-signals](https://github.com/GalacticChill/star-signals)** (pip-installable, CI-tested).
 - [Market Structure](projects/market-structure) — unsupervised learning on daily returns: can hierarchical clustering rediscover the market's sectors from price co-movement alone? Dendrogram, reordered correlation heatmap, and an honest adjusted-Rand score against real sectors.
 - [Life & Money](projects/life-and-money) — does wealth buy a longer life? A World Bank cross-country study: the Preston curve (diminishing returns of income), an out-of-sample model where clean water and sanitation nearly rival income, and a residual analysis of which countries beat the odds. **Graduated to its own repo → [GalacticChill/life-and-money](https://github.com/GalacticChill/life-and-money)** (pip-installable, CI-tested).
+- [Word Prints](projects/word-prints) — stylometry / NLP: can we identify an author from function words alone (the, of, upon), with all content stripped away? Leave-one-book-out attribution across 20 novels hits 87% on function words alone — beating the full vocabulary. Confusion matrix, per-author signatures, and a PCA style map.
 
 ## Plans
 - [Stock Data Toolkit](plans/2026-06-16-stock-data-toolkit.md)
@@ -20,3 +21,4 @@ Weekly data/ML and finance projects in Python. An incubator for new builds.
 - [Market Structure (unsupervised)](plans/2026-08-03-market-structure.md)
 - [Bootstrap significance](plans/2026-08-17-bootstrap-significance.md)
 - [Capstone: Life & Money](plans/2026-08-31-life-and-money.md)
+- [Capstone: Word Prints (stylometry)](plans/2026-09-14-word-prints.md)
