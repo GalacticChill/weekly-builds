@@ -9,6 +9,7 @@ Weekly data/ML and finance projects in Python. An incubator for new builds.
 - [Market Structure](projects/market-structure) — unsupervised learning on daily returns: can hierarchical clustering rediscover the market's sectors from price co-movement alone? Dendrogram, reordered correlation heatmap, and an honest adjusted-Rand score against real sectors.
 - [Life & Money](projects/life-and-money) — does wealth buy a longer life? A World Bank cross-country study: the Preston curve (diminishing returns of income), an out-of-sample model where clean water and sanitation nearly rival income, and a residual analysis of which countries beat the odds. **Graduated to its own repo → [GalacticChill/life-and-money](https://github.com/GalacticChill/life-and-money)** (pip-installable, CI-tested).
 - [Word Prints](projects/word-prints) — stylometry / NLP: can we identify an author from function words alone (the, of, upon), with all content stripped away? Leave-one-book-out attribution across 20 novels hits 87% on function words alone — beating the full vocabulary. Confusion matrix, per-author signatures, and a PCA style map.
+- [Benford's Law](projects/benford) — the hidden pattern in the leading digit: real data starts with 1 about 30% of the time, not 11%. A forensic-statistics study across World Bank figures, Fibonacci, and controls, with chi-square and MAD conformity tests — and an honest look at why it's a screen, not a fraud verdict.
 
 ## Plans
 - [Stock Data Toolkit](plans/2026-06-16-stock-data-toolkit.md)
@@ -22,3 +23,4 @@ Weekly data/ML and finance projects in Python. An incubator for new builds.
 - [Bootstrap significance](plans/2026-08-17-bootstrap-significance.md)
 - [Capstone: Life & Money](plans/2026-08-31-life-and-money.md)
 - [Capstone: Word Prints (stylometry)](plans/2026-09-14-word-prints.md)
+- [Benford's Law](plans/2026-09-21-benford.md)
