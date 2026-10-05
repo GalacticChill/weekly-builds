@@ -11,6 +11,7 @@ Weekly data/ML and finance projects in Python. An incubator for new builds.
 - [Word Prints](projects/word-prints) — stylometry / NLP: can we identify an author from function words alone (the, of, upon), with all content stripped away? Leave-one-book-out attribution across 20 novels hits 87% on function words alone — beating the full vocabulary. Confusion matrix, per-author signatures, and a PCA style map.
 - [Benford's Law](projects/benford) — the hidden pattern in the leading digit: real data starts with 1 about 30% of the time, not 11%. A forensic-statistics study across World Bank figures, Fibonacci, and controls, with chi-square and MAD conformity tests — and an honest look at why it's a screen, not a fraud verdict.
 - [Forecastable?](projects/forecastable) — what you can and can't predict in a time series: NOAA's CO2 (real trend + seasonality) forecasts 5 years out to ~0.3% error, while a random walk beats every model with the humble "repeat the last value." Time-series forecasting with honest, no-shuffle, forecast-the-future validation.
+- [Schelling](projects/schelling) — how much personal preference does it take to segregate a city? An agent-based simulation of Schelling's model: when agents want just ~30% of their neighbours to match, a randomly mixed city settles into a divided one. Before/after maps and a segregation tipping curve.
 - [Slang Half-Life](https://github.com/GalacticChill/slang-half-life) — how long does a slang term live? Ten years of Wiktionary lookups for 77 terms, Kaplan-Meier survival analysis of their half-lives, shape clustering, and 10,261 Urban Dictionary definitions showing insiders define a word months before the mainstream looks it up. **Built as its own repo from day one** (pip-installable, CI-tested, with an installable [dashboard](https://galacticchill.github.io/slang-half-life/) that works offline and refreshes weekly).
 
 ## Plans
@@ -27,3 +28,4 @@ Weekly data/ML and finance projects in Python. An incubator for new builds.
 - [Capstone: Word Prints (stylometry)](plans/2026-09-14-word-prints.md)
 - [Benford's Law](plans/2026-09-21-benford.md)
 - [Forecastable? (time series)](plans/2026-09-28-forecastable.md)
+- [Schelling segregation (agent-based)](plans/2026-10-05-schelling.md)
