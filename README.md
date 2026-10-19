@@ -30,6 +30,7 @@ their own [standalone repositories](#graduated-standalone-repos).
 | [Benford's Law](projects/benford) | Statistics | distributional goodness-of-fit |
 | [Forecastable?](projects/forecastable) | Forecasting | time-series, honest validation |
 | [Schelling](projects/schelling) | Simulation | agent-based modeling |
+| [Small Samples](projects/small-samples) | Statistics | empirical-Bayes shrinkage |
 
 ---
 
@@ -85,6 +86,10 @@ their own [standalone repositories](#graduated-standalone-repos).
 - **[Schelling](projects/schelling)** — how little personal preference it takes to
   segregate a city. An agent-based model where wanting just ~30% of your neighbours
   to match tips a mixed city into a divided one — a mechanism, not a map.
+- **[Small Samples](projects/small-samples)** — why a 100% success rate usually means
+  nothing. Empirical-Bayes shrinkage pulls noisy small-sample rates toward the crowd;
+  against known true rates it cuts error threefold, and a 3-for-3 "best player" turns
+  out to be average.
 
 ---
 
@@ -112,6 +117,9 @@ refuses to overstate its result:
 - **A model is a mechanism, not a map.** Schelling proves mild preference is
   *sufficient* to segregate — not that it's the only cause — and even flags the
   regime where the model has no equilibrium.
+- **Don't trust a rate from a tiny sample.** Small Samples shows a "perfect" 3-for-3
+  record is noise, and leans on shrinkage and credible intervals to say how much of
+  an estimate is really earned.
 
 ## Graduated standalone repos
 
@@ -161,3 +169,4 @@ Each week's project starts with a short plan in [`plans/`](plans):
 | 2026-09-21 | [Benford's Law](plans/2026-09-21-benford.md) |
 | 2026-09-28 | [Forecastable? (time series)](plans/2026-09-28-forecastable.md) |
 | 2026-10-05 | [Schelling segregation (agent-based)](plans/2026-10-05-schelling.md) |
+| 2026-10-19 | [Small Samples (empirical Bayes)](plans/2026-10-19-small-samples.md) |
