@@ -31,6 +31,7 @@ their own [standalone repositories](#graduated-standalone-repos).
 | [Forecastable?](projects/forecastable) | Forecasting | time-series, honest validation |
 | [Schelling](projects/schelling) | Simulation | agent-based modeling |
 | [Small Samples](projects/small-samples) | Statistics | empirical-Bayes shrinkage |
+| [Causal Traps](projects/causal-traps) | Statistics | causal inference (DAGs, adjustment) |
 
 ---
 
@@ -90,6 +91,10 @@ their own [standalone repositories](#graduated-standalone-repos).
   nothing. Empirical-Bayes shrinkage pulls noisy small-sample rates toward the crowd;
   against known true rates it cuts error threefold, and a 3-for-3 "best player" turns
   out to be average.
+- **[Causal Traps](projects/causal-traps)** — correlation isn't causation, and
+  "control for everything" is worse: adjusting for a confounder fixes the estimate,
+  but adjusting for a collider invents one out of nothing. Three simulated worlds
+  with known true effects.
 
 ---
 
@@ -120,6 +125,9 @@ refuses to overstate its result:
 - **Don't trust a rate from a tiny sample.** Small Samples shows a "perfect" 3-for-3
   record is noise, and leans on shrinkage and credible intervals to say how much of
   an estimate is really earned.
+- **Controlling for the wrong thing makes it worse.** Causal Traps shows that
+  "adjust for everything" invents a −0.39 effect out of a true zero when the variable
+  is a collider — you need the causal graph, not just a regression.
 
 ## Graduated standalone repos
 
@@ -170,3 +178,4 @@ Each week's project starts with a short plan in [`plans/`](plans):
 | 2026-09-28 | [Forecastable? (time series)](plans/2026-09-28-forecastable.md) |
 | 2026-10-05 | [Schelling segregation (agent-based)](plans/2026-10-05-schelling.md) |
 | 2026-10-19 | [Small Samples (empirical Bayes)](plans/2026-10-19-small-samples.md) |
+| 2026-10-26 | [Causal Traps (causal inference)](plans/2026-10-26-causal-traps.md) |
