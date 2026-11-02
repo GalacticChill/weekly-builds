@@ -32,6 +32,7 @@ their own [standalone repositories](#graduated-standalone-repos).
 | [Schelling](projects/schelling) | Simulation | agent-based modeling |
 | [Small Samples](projects/small-samples) | Statistics | empirical-Bayes shrinkage |
 | [Causal Traps](projects/causal-traps) | Statistics | causal inference (DAGs, adjustment) |
+| [Flight Network](projects/flight-network) | Networks | graph theory, robustness |
 
 ---
 
@@ -95,6 +96,9 @@ their own [standalone repositories](#graduated-standalone-repos).
   "control for everything" is worse: adjusting for a confounder fixes the estimate,
   but adjusting for a collider invents one out of nothing. Three simulated worlds
   with known true effects.
+- **[Flight Network](projects/flight-network)** — the world's 3,257 airports as a
+  graph: any two reachable in ~4 hops, yet "robust yet fragile" — random failures
+  barely dent it (40% to break) while hub-targeted removal shatters it (9%).
 
 ---
 
@@ -128,6 +132,10 @@ refuses to overstate its result:
 - **Controlling for the wrong thing makes it worse.** Causal Traps shows that
   "adjust for everything" invents a −0.39 effect out of a true zero when the variable
   is a collider — you need the causal graph, not just a regression.
+- **Know what an edge really means.** Flight Network is careful that a route is "you
+  can fly it," not "lots of people do" — unweighted topology, paths in flights not
+  time, a dated snapshot — so the structural lessons travel but the exact numbers
+  stay in their lane.
 
 ## Graduated standalone repos
 
@@ -179,3 +187,4 @@ Each week's project starts with a short plan in [`plans/`](plans):
 | 2026-10-05 | [Schelling segregation (agent-based)](plans/2026-10-05-schelling.md) |
 | 2026-10-19 | [Small Samples (empirical Bayes)](plans/2026-10-19-small-samples.md) |
 | 2026-10-26 | [Causal Traps (causal inference)](plans/2026-10-26-causal-traps.md) |
+| 2026-11-02 | [Flight Network (network science)](plans/2026-11-02-flight-network.md) |
