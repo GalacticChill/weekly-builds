@@ -33,6 +33,7 @@ their own [standalone repositories](#graduated-standalone-repos).
 | [Small Samples](projects/small-samples) | Statistics | empirical-Bayes shrinkage |
 | [Causal Traps](projects/causal-traps) | Statistics | causal inference (DAGs, adjustment) |
 | [Flight Network](projects/flight-network) | Networks | graph theory, robustness |
+| [Recommender](projects/recommender) | Machine learning | collaborative filtering, matrix factorization |
 
 ---
 
@@ -66,6 +67,10 @@ their own [standalone repositories](#graduated-standalone-repos).
 - **[Word Prints](projects/word-prints)** — stylometry: identify an author from the
   tiny function words they don't think about (*the, of, upon*), content stripped
   away. 87% accuracy on unseen books — beating the full vocabulary.
+- **[Recommender](projects/recommender)** — does matrix factorization beat "most
+  popular"? Built from scratch on MovieLens, it barely beats a plain bias model on
+  rating error and *loses* to popularity on actual top-10 recommendations — better
+  ratings, worse recommendations.
 
 ### Data & society
 
@@ -136,6 +141,9 @@ refuses to overstate its result:
   can fly it," not "lots of people do" — unweighted topology, paths in flights not
   time, a dated snapshot — so the structural lessons travel but the exact numbers
   stay in their lane.
+- **Win the right metric, not the easy one.** Recommender shows a matrix-factorization
+  model beating the baselines on RMSE while *losing* to plain popularity on top-10
+  recall — a reminder to evaluate on the objective you actually care about.
 
 ## Graduated standalone repos
 
@@ -188,3 +196,4 @@ Each week's project starts with a short plan in [`plans/`](plans):
 | 2026-10-19 | [Small Samples (empirical Bayes)](plans/2026-10-19-small-samples.md) |
 | 2026-10-26 | [Causal Traps (causal inference)](plans/2026-10-26-causal-traps.md) |
 | 2026-11-02 | [Flight Network (network science)](plans/2026-11-02-flight-network.md) |
+| 2026-11-09 | [Recommender (collaborative filtering)](plans/2026-11-09-recommender.md) |
